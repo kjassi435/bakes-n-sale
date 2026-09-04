@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import type { Metadata } from 'next';
 import { API_URL } from '@/lib/api';
 import AddToCartBox from '@/components/AddToCartBox';
@@ -7,7 +8,8 @@ import ReviewsBox from '@/components/ReviewsBox';
 import ProductCard from '@/components/ProductCard';
 import RatingStars from '@/components/RatingStars';
 
-async function getProduct(slug: string) {
+// Cached per-request: metadata + page share ONE API call instead of two.
+const getProduct = cache(async (slug: string) => {
   try {
     const res = await fetch(`${API_URL}/products/${slug}`, { cache: 'no-store' });
     if (!res.ok) return null;
@@ -15,7 +17,7 @@ async function getProduct(slug: string) {
   } catch {
     return null;
   }
-}
+});
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;

@@ -50,21 +50,21 @@ export default async function HomePage() {
   const [data, settings] = await Promise.all([getHome(), getSiteSettings()]);
 
   // --- CMS-driven sections (admin editable, with safe fallbacks) ---
+  // All section product-lists resolve in ONE parallel batch (not sequentially).
   const heroSlugs: string[] = Array.isArray(settings.hero_slides) ? settings.hero_slides : [];
-  const heroProducts = heroSlugs.length ? await getProductsBySlugs(heroSlugs) : [];
-  const heroItems = heroProducts.length ? heroProducts.map(productToGalleryItem) : undefined;
-
   const freshSlugs: string[] = Array.isArray(settings.home_fresh) ? settings.home_fresh : [];
-  const freshProducts = freshSlugs.length ? await getProductsBySlugs(freshSlugs) : [];
-  const fresh = freshProducts.length ? freshProducts : (data?.fresh ?? []);
-
   const chefSlugs: string[] = Array.isArray(settings.home_chef) ? settings.home_chef : [];
-  const chefProducts = chefSlugs.length ? await getProductsBySlugs(chefSlugs) : [];
-  const chefSpecials = chefProducts.length ? chefProducts : (data?.chefSpecials ?? []);
-
   const festiveCfg = settings.home_festive ?? {};
   const festiveSlugs: string[] = Array.isArray(festiveCfg.slugs) ? festiveCfg.slugs : [];
-  const festiveProducts = festiveSlugs.length ? await getProductsBySlugs(festiveSlugs) : [];
+  const [heroProducts, freshProducts, chefProducts, festiveProducts] = await Promise.all([
+    heroSlugs.length ? getProductsBySlugs(heroSlugs) : Promise.resolve([]),
+    freshSlugs.length ? getProductsBySlugs(freshSlugs) : Promise.resolve([]),
+    chefSlugs.length ? getProductsBySlugs(chefSlugs) : Promise.resolve([]),
+    festiveSlugs.length ? getProductsBySlugs(festiveSlugs) : Promise.resolve([]),
+  ]);
+  const heroItems = heroProducts.length ? heroProducts.map(productToGalleryItem) : undefined;
+  const fresh = freshProducts.length ? freshProducts : (data?.fresh ?? []);
+  const chefSpecials = chefProducts.length ? chefProducts : (data?.chefSpecials ?? []);
   const festive = festiveProducts.length ? festiveProducts : (data?.festive ?? []);
   const festiveTitle: string = festiveCfg.title || 'Festive Gift Boxes';
   const festiveSubtitle: string =
