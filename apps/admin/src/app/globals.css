@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ivory: #fffaf0;
+  --color-cream: #fdf3e0;
+  --color-sand: #f5e6c8;
+  --color-taupe: #d4b896;
+  --color-espresso: #390f10;
+  --color-cocoa: #5c1a1a;
+  --color-mocha: #8b3a1a;
+  --color-gold: #b08d57;
+  --color-goldlight: #d4a574;
+  --color-goldsoft: #f9e8c4;
+  --color-blush: #fde8d0;
+
+  --font-display: var(--font-fraunces), Georgia, serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-cream text-espresso font-sans antialiased;
+  }
+}
+
+@layer components {
+  .input-adm {
+    @apply w-full rounded-md border border-cocoa/15 bg-white px-3.5 py-2.5 text-sm outline-none transition placeholder:text-mocha/50 focus:border-gold focus:ring-2 focus:ring-gold/20;
+  }
+  .btn-adm {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-cocoa px-5 py-2.5 text-sm font-bold text-ivory border border-gold/30 transition hover:bg-espresso hover:border-goldlight disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-adm-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-cocoa/20 bg-white px-5 py-2.5 text-sm font-bold text-cocoa transition hover:border-gold hover:text-gold disabled:opacity-50;
+  }
+  .card-adm {
+    @apply rounded-sm border border-taupe/20 bg-white shadow-[0_2px_12px_rgba(57,15,16,0.06)];
+  }
+  .th-adm {
+    @apply px-4 py-3 text-left text-[11px] font-bold tracking-wider text-mocha uppercase;
+  }
+  .td-adm {
+    @apply px-4 py-3.5 text-sm;
+  }
+}

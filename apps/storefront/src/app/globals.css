@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+@theme {
+  /* Classic Upper Cakes - Warm Bakery Premium */
+  --color-ivory: #fffaf0;
+  --color-cream: #fdf3e0;
+  --color-sand: #f5e6c8;
+  --color-taupe: #d4b896;
+  --color-espresso: #390f10;
+  --color-cocoa: #5c1a1a;
+  --color-mocha: #8b3a1a;
+  --color-gold: #b08d57;
+  --color-goldlight: #d4a574;
+  --color-goldsoft: #f9e8c4;
+  --color-blush: #fde8d0;
+  --color-wood: #2c0f0a;
+
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+
+  --animate-fade-up: fade-up 0.7s ease both;
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-marquee: marquee 30s linear infinite;
+  --animate-shimmer: shimmer 2.5s linear infinite;
+
+  @keyframes fade-up {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @keyframes shimmer {
+    from { background-position: -200% 0; }
+    to { background-position: 200% 0; }
+  }
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-cream text-espresso font-sans antialiased;
+    background-image: radial-gradient(circle at 1px 1px, rgba(57,15,16,0.04) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+  ::selection {
+    @apply bg-gold/30 text-espresso;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--color-cream);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-taupe);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-mocha);
+  }
+}
+
+@layer components {
+  .container-x {
+    @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+  }
+  .btn-gold {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-cocoa px-7 py-3 text-sm font-bold tracking-wide text-ivory border border-gold/60 transition-all duration-300 hover:bg-espresso hover:border-goldlight hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-cocoa/30 bg-white/80 px-7 py-3 text-sm font-bold tracking-wide text-cocoa transition-all duration-300 hover:border-gold hover:text-gold hover:bg-goldsoft/30 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .input-lux {
+    @apply w-full rounded-md border border-cocoa/15 bg-white px-4 py-3 text-sm text-espresso outline-none transition placeholder:text-mocha/50 focus:border-gold focus:ring-2 focus:ring-gold/20;
+  }
+  .card-lux {
+    @apply rounded-sm border border-taupe/20 bg-white shadow-[0_2px_12px_rgba(57,15,16,0.06)] backdrop-blur;
+  }
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.28em] text-gold;
+  }
+  .gold-divider {
+    @apply mx-auto h-px w-24 bg-gradient-to-r from-transparent via-gold/60 to-transparent;
+  }
+  .fan-layout {
+    height: 38rem;
+    position: relative;
+  }
+  .fan-card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 280px;
+    height: 360px;
+    margin-left: -140px;
+    margin-top: -180px;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(57,15,16,0.15);
+    will-change: transform;
+    background: white;
+    border: 1px solid rgba(212,184,150,0.4);
+  }
+  @media (max-width: 1024px) {
+    .fan-layout { height: 34rem; }
+    .fan-card { width: 240px; height: 320px; margin-left: -120px; margin-top: -160px; }
+  }
+  @media (max-width: 768px) {
+    .fan-layout { height: 28rem; }
+    .fan-card { width: 200px; height: 280px; margin-left: -100px; margin-top: -140px; }
+  }
+  @media (max-width: 640px) {
+    .fan-layout { height: 26rem; }
+    .fan-card { width: 180px; height: 240px; margin-left: -90px; margin-top: -120px; }
+  }
+  @media (max-width: 480px) {
+    .fan-layout { height: 22rem; }
+    .fan-card { width: 150px; height: 200px; margin-left: -75px; margin-top: -100px; }
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "bakes-n-sale",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bakes n Sale — premium single-vendor bakery e-commerce platform",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @bakery/shared && npm run build -w @bakery/api && npm run build -w @bakery/storefront && npm run build -w @bakery/admin",
+    "dev": "npm run build -w @bakery/shared && concurrently -k -n api,shop,admin -c yellow,magenta,cyan \"npm run dev -w @bakery/api\" \"npm run dev -w @bakery/storefront\" \"npm run dev -w @bakery/admin\"",
+    "db:up": "docker compose up -d",
+    "db:push": "npm run db:push -w @bakery/api",
+    "db:seed": "npm run db:seed -w @bakery/api",
+    "setup": "npm install && npm run build -w @bakery/shared && npm run db:push && npm run db:seed"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

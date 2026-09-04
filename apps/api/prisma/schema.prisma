@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Local dev: SQLite (zero setup). Production: switch to "postgresql"
+  // and point DATABASE_URL at docker-compose.yml's Postgres service.
+  // The schema is intentionally portable: JSON blobs are stored as strings
+  // and enums as strings so both providers work without changes.
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String
+  email         String    @unique
+  phone         String?
+  passwordHash  String
+  role          String    @default("CUSTOMER") // CUSTOMER | ADMIN | MANAGER | SUPPORT
+  loyaltyPoints Int       @default(0)
+  addresses     Address[]
+  orders        Order[]
+  wishlist      Wishlist[]
+  reviews       Review[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Address {
+  id        String  @id @default(cuid())
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  label     String  @default("Home")
+  fullName  String
+  phone     String
+  line1     String
+  line2     String?
+  city      String
+  state     String
+  pincode   String
+  isDefault Boolean @default(false)
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  image       String?
+  sortOrder   Int        @default(0)
+  parentId    String?
+  parent      Category?  @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryChildren")
+  products    Product[]
+}
+
+model Product {
+  id                String           @id @default(cuid())
+  name              String
+  slug              String           @unique
+  shortDescription  String?
+  description       String?
+  sku               String?          @unique
+  categoryId        String?
+  category          Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  images            String           @default("[]") // JSON array of image paths
+  tags              String           @default("[]") // JSON array (dietary + occasion)
+  allergens         String           @default("[]") // JSON array
+  nutrition         String? // JSON object string
+  basePrice         Float
+  compareAtPrice    Float?
+  stock             Int              @default(0)
+  lowStockThreshold Int              @default(5)
+  isActive          Boolean          @default(true)
+  isFeatured        Boolean          @default(false)
+  isChefSpecial     Boolean          @default(false)
+  isPreorder        Boolean          @default(false)
+  ratingAvg         Float            @default(0)
+  ratingCount       Int              @default(0)
+  variants          ProductVariant[]
+  reviews           Review[]
+  wishlist          Wishlist[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id        String  @id @default(cuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String // display name, e.g. "500g" or "8 inch"
+  option1   String? // e.g. size / weight
+  option2   String? // e.g. flavor
+  price     Float
+  stock     Int     @default(0)
+  sku       String?
+  isActive  Boolean @default(true)
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName  String
+  rating    Int
+  title     String?
+  body      String?
+  createdAt DateTime @default(now())
+}
+
+model Coupon {
+  id            String    @id @default(cuid())
+  code          String    @unique
+  type          String    @default("PERCENT") // PERCENT | FIXED | SHIPPING
+  value         Float
+  minOrderValue Float     @default(0)
+  maxDiscount   Float?
+  usageLimit    Int?
+  usedCount     Int       @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean   @default(true)
+  description   String?
+  createdAt     DateTime  @default(now())
+}
+
+model Order {
+  id              String               @id @default(cuid())
+  orderNumber     String               @unique
+  userId          String?
+  user            User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  status          String               @default("PENDING")
+  paymentMethod   String               @default("COD")
+  paymentStatus   String               @default("PENDING")
+  subtotal        Float
+  discount        Float                @default(0)
+  deliveryFee     Float                @default(0)
+  tax             Float                @default(0)
+  total           Float
+  couponCode      String?
+  addressSnapshot String // JSON string of the delivery address
+  deliveryDate    String? // YYYY-MM-DD
+  deliverySlot    String?
+  notes           String?
+  loyaltyEarned   Int                  @default(0)
+  items           OrderItem[]
+  history         OrderStatusHistory[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  order       Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String
+  variantId   String?
+  productName String
+  variantName String?
+  image       String?
+  unitPrice   Float
+  quantity    Int
+  total       Float
+}
+
+model OrderStatusHistory {
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  status    String
+  note      String?
+  createdAt DateTime @default(now())
+}
+
+model SiteSetting {
+  key       String   @id
+  value     String   @default("{}") // JSON string
+  updatedAt DateTime @updatedAt
+}
+
+model Wishlist {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+}

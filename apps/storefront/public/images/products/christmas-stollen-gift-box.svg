@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F9F3E8"/>
+      <stop offset="1" stop-color="#B9C4A1" stop-opacity="0.55"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.4" r="0.65">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#D4AF37"/>
+      <stop offset="1" stop-color="#7E8A62"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="800" fill="url(#bg)"/>
+  <rect width="800" height="800" fill="url(#glow)"/>
+  <circle cx="400" cy="410" r="240" fill="#FFFDF8" opacity="0.82"/>
+  <circle cx="400" cy="410" r="240" fill="none" stroke="url(#ring)" stroke-opacity="0.65" stroke-width="2.5"/>
+  <circle cx="400" cy="410" r="258" fill="none" stroke="#C9A227" stroke-opacity="0.22" stroke-width="1"/>
+  <text x="400" y="455" font-size="230" text-anchor="middle">🎄</text>
+  <text x="400" y="726" font-size="26" text-anchor="middle" fill="#4A2F23" font-family="Georgia, 'Times New Roman', serif" letter-spacing="7">CHRISTMAS STOLLEN</text>
+  <text x="400" y="762" font-size="13" text-anchor="middle" fill="#7A5C48" font-family="Georgia, serif" letter-spacing="4">GILDED OVEN · ARTISAN BAKERY</text>
+</svg>

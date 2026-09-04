@@ -1,0 +1,23 @@
+# Render blueprint for the Bakes n Sale API (NestJS).
+# Apply via Render Dashboard → New → Blueprint → select this repo.
+services:
+  - type: web
+    name: bakes-n-sale-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build -w @bakery/shared && npm run build -w @bakery/api
+    startCommand: npm run start -w @bakery/api
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 22.13.0
+      - key: DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_REFRESH_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
