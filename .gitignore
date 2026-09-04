@@ -21,6 +21,9 @@ logs/
 *.log
 npm-debug.log*
 
+# Vercel CLI
+.vercel
+
 # OS / IDE
 .DS_Store
 Thumbs.db
