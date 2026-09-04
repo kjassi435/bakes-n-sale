@@ -1,14 +1,14 @@
-# Deploy — GitHub + Turso + Vercel (+ Render for the API)
+# Deploy — GitHub + Turso + Vercel (all three apps)
 
 Architecture in production:
 
-| Piece    | Host    | Notes                                   |
-| -------- | ------- | --------------------------------------- |
-| Code     | GitHub  | single monorepo                         |
-| Database | Turso   | SQLite-compatible, works with Prisma via libSQL adapter |
-| Storefront | Vercel | Next.js (`apps/storefront`)            |
-| Admin    | Vercel  | Next.js (`apps/admin`)                  |
-| API      | Render  | NestJS needs a persistent Node server — Vercel is serverless-only, so the API goes on Render free tier |
+| Piece      | Host   | Project / URL                                    |
+| ---------- | ------ | ------------------------------------------------ |
+| Code       | GitHub | `kjassi435/bakes-n-sale`, branch `main`          |
+| Database   | Turso  | `bakes-n-sale-kjassi435.aws-ap-south-1.turso.io` (Mumbai) |
+| Storefront | Vercel | `bakes-n-sale-storefront` → https://bakes-n-sale-storefront.vercel.app |
+| Admin      | Vercel | `bakes-n-sale-admin` → https://bakes-n-sale-admin.vercel.app |
+| API        | Vercel | `bakes-n-sale-api` → https://bakes-n-sale-api.vercel.app (NestJS on a serverless function via `apps/api/api/index.ts` + rewrites; same code as local `src/main.ts`) |
 
 ## 0. Prerequisites (install once)
 
@@ -61,12 +61,16 @@ npm run db:seed
 
 Seeded logins: `admin@bakesnsale.com / Admin@123`, `manager@bakesnsale.com / Manager@123`, `priya@example.com / Priya@123`.
 
-## 3. Render — host the API
+## 3. Vercel — API project (done via API/CLI)
 
-1. Go to **dashboard.render.com → New → Blueprint** and select the GitHub repo (uses `render.yaml`).
-2. Set env vars: `DATABASE_URL` (libsql://…), `TURSO_AUTH_TOKEN`, `CORS_ORIGINS` (fill in after step 4, then redeploy), keep generated JWT secrets.
-3. Deploy → note the URL, e.g. `https://bakes-n-sale-api.onrender.com`.
-4. Health check: `https://<api>/api/health` → `{"ok":true,…}`.
+Project `bakes-n-sale-api`, Root Directory `apps/api`. It builds with
+`npm run build -w @bakery/shared && npm run build -w @bakery/api` (see `apps/api/vercel.json`)
+and serves NestJS from the `api/` serverless function with rewrites `/api/(.*) → /api`.
+Env (production): `DATABASE_URL` (libsql://…), `TURSO_AUTH_TOKEN`, `JWT_SECRET`,
+`JWT_REFRESH_SECRET`, `CORS_ORIGINS=https://bakes-n-sale-storefront.vercel.app,https://bakes-n-sale-admin.vercel.app`.
+Health check: `https://bakes-n-sale-api.vercel.app/api/health` → `{"ok":true,…}`.
+
+> Note: `render.yaml` is kept as a fallback if you ever want the API on Render instead.
 
 ## 4. Vercel — host storefront + admin (2 projects, 1 repo)
 
@@ -79,12 +83,10 @@ For **each** app (do it twice):
    - Admin: `NEXT_PUBLIC_API_URL=https://<api>/api`, `NEXT_PUBLIC_STOREFRONT_URL=https://<storefront-url>`
 4. Deploy.
 
-Or via CLI (already logged in as `kjassi435`):
-
-```powershell
-cd apps/storefront && vercel --prod   # answer: link to new project
-cd ..\admin && vercel --prod
-```
+Or via CLI / API (already logged in as `kjassi435`): create projects with
+`rootDirectory` = `apps/storefront` / `apps/admin`, add the env vars from step 3,
+then trigger a production deployment with `gitSource: { type: "github", org, repo, ref: "main" }`.
+Redeploy after any env change (env vars bake into Next.js builds).
 
 ## 5. Finish
 
