@@ -49,11 +49,7 @@ export default function AdminLoginPage() {
           <button disabled={busy} className="btn-adm w-full">{busy ? 'Signing in…' : 'Sign In'}</button>
         </form>
 
-        <div className="mt-6 rounded-xl bg-cream/70 p-4 text-xs text-mocha">
-          <p className="font-bold text-espresso">Demo accounts</p>
-          <p className="mt-1">admin@bakesnsale.com · Admin@123</p>
-          <p>manager@bakesnsale.com · Manager@123</p>
-        </div>
+
       </div>
     </div>
   );

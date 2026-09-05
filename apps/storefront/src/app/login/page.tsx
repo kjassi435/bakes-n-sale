@@ -49,10 +49,7 @@ function LoginForm() {
           </Link>
         </p>
 
-        <div className="mt-6 rounded-xl bg-cream/70 p-4 text-xs text-mocha">
-          <p className="font-bold text-espresso">Demo customer</p>
-          <p>priya@example.com · Priya@123</p>
-        </div>
+
       </div>
     </div>
   );
