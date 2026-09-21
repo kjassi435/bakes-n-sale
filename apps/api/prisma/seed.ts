@@ -507,7 +507,7 @@ async function main() {
 
   // Reviews - updated to new slugs
   const reviewSeeds = [
-    { slug: 'ellora-nan-khatai-300g', userName: 'Rahul Gupta', rating: 5, title: 'Best nan khatai in Delhi', body: 'Ellora’s nan khatai is buttery and crumbly. Real ghee flavour, not dalda.' },
+    { slug: 'ellora-nan-khatai-300g', userName: 'Rahul Gupta', rating: 5, title: 'Best nan khatai in West Bengal', body: 'Ellora’s nan khatai is buttery and crumbly. Real ghee flavour, not dalda.' },
     { slug: 'breadberries-coconut-cookies-200g', userName: 'Anjali Verma', rating: 5, title: 'Coconut bliss', body: 'Breadberries coconut cookies are crisp outside, chewy inside. Love the 200g tub.' },
     { slug: 'polka-pista-cashew-cookies-400g', userName: 'Priya Sharma', rating: 5, title: 'My evening chai ritual', body: 'Pista cashew cookies are loaded with nuts. Worth ₹320.' },
     { slug: 'big-bake-pista-badam-450g', userName: 'Vikram Joshi', rating: 4, title: 'Big Bake quality', body: 'Pista badam cookies are fresh and nutty. Jar keeps them crisp.' },
@@ -579,9 +579,9 @@ async function main() {
       hours: 'Baking: 5am – 11am daily; Dispatch & Support: 8am – 9pm; Store: 8am – 9pm, Howrah',
       mapUrl: 'https://maps.google.com/?q=82/7 Shaikh Para Lane Howrah 711103',
     },
-    header: { announcements: ['Free delivery across Delhi on orders above Rs.999', 'Baked fresh every morning — orders before 2 PM ship same day', 'Use code WELCOME10 for 10% off your first order'] },
+    header: { announcements: ['Free delivery across West Bengal on orders above Rs.999', 'Baked fresh every morning — orders before 2 PM ship same day', 'Use code WELCOME10 for 10% off your first order'] },
     footer: {
-      about: 'Baking treasured recipes since 1998 — signature cakes, artisan rusk, small-batch cookies and traditional namkeen, made fresh every morning in Delhi.',
+      about: 'Baking treasured recipes since 1998 — signature cakes, artisan rusk, small-batch cookies and traditional namkeen, made fresh every morning in West Bengal.',
       address: '82/7 Shaikh Para Lane, Howrah - 711103. Open daily 8 AM – 9 PM',
       phone: '+91 78900 27798', email: 'bakesnsale@gmail.com',
       instagram: '#', facebook: '#', youtube: '#',
@@ -597,8 +597,8 @@ async function main() {
   if (addressCount === 0) {
     await prisma.address.createMany({
       data: [
-        { userId: priya.id, label: 'Home', fullName: 'Priya Sharma', phone: '+91 98100 12345', line1: 'B-42, Sector 16, Rohini', line2: 'Near Metro Pillar 362', city: 'New Delhi', state: 'Delhi', pincode: '110085', isDefault: true },
-        { userId: priya.id, label: 'Work', fullName: 'Priya Sharma', phone: '+91 98100 12345', line1: '4th Floor, 24 Barakhamba Road', line2: 'Connaught Place', city: 'New Delhi', state: 'Delhi', pincode: '110001', isDefault: false },
+        { userId: priya.id, label: 'Home', fullName: 'Priya Sharma', phone: '+91 98100 12345', line1: 'B-42, Sector 16, Rohini', line2: 'Near Metro Pillar 362', city: 'Kolkata', state: 'West Bengal', pincode: '700085', isDefault: true },
+        { userId: priya.id, label: 'Work', fullName: 'Priya Sharma', phone: '+91 98100 12345', line1: '4th Floor, 24 Barakhamba Road', line2: 'Connaught Place', city: 'Kolkata', state: 'West Bengal', pincode: '700001', isDefault: false },
       ],
     });
   }

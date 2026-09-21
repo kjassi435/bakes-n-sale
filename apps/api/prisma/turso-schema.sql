@@ -46,6 +46,7 @@ CREATE TABLE "Product" (
     "slug" TEXT NOT NULL,
     "shortDescription" TEXT,
     "description" TEXT,
+    "deliveryInfo" TEXT,
     "sku" TEXT,
     "categoryId" TEXT,
     "images" TEXT NOT NULL DEFAULT '[]',

@@ -27,7 +27,7 @@ function initialsOf(name: string) {
 const FEATURES = [
   { icon: '🌾', title: 'Finest Ingredients', text: 'Single-origin cocoa, Kashmiri saffron, pure ghee — never any shortcuts or premixes.' },
   { icon: '👩‍🍳', title: 'Master Bakers', text: 'Three generations of bakers refining heirloom recipes since 1998.' },
-  { icon: '🛵', title: 'Same-Day Delivery', text: 'Order before 2 PM and receive your bakes fresh the very same evening across Delhi.' },
+  { icon: '🛵', title: 'Same-Day Delivery', text: 'Order before 2 PM and receive your bakes fresh the very same evening across West Bengal.' },
   { icon: '🎀', title: 'Gift-Ready Packaging', text: 'Every order arrives in elegant, keepsake-worthy packaging with a hand-written note.' },
 ];
 
@@ -173,7 +173,7 @@ export default async function HomePage() {
       )}
 
       <section className="container-x py-16">
-        <SectionHeading eyebrow="The Bakes n Sale Promise" title="Why Delhi Trusts Our Oven" />
+        <SectionHeading eyebrow="The Bakes n Sale Promise" title="Why West Bengal Trusts Our Oven" />
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {FEATURES.map((f) => (
             <div key={f.title} className="card-lux p-7 text-center">
@@ -235,7 +235,7 @@ export default async function HomePage() {
           <h2 className="mt-3 font-display text-3xl font-semibold sm:text-4xl">Three generations, one oven</h2>
           <p className="mt-5 text-sm leading-relaxed text-mocha">
             It began in 1998 with a single deck oven and a recipe for kesar rusk that our founder carried
-            from her grandmother&apos;s kitchen in Old Delhi. Today, Bakes n Sale bakes over forty treasured
+            from her grandmother&apos;s kitchen in West Bengal. Today, Bakes n Sale bakes over forty treasured
             recipes every morning — still by hand, still in small batches, still with the same belief:
             that a great bake is an act of love.
           </p>

@@ -81,7 +81,7 @@ export default function Hero({ items }: { items?: GalleryItem[] }) {
             transition={{ duration: 0.6 }}
             className="eyebrow"
           >
-            Artisan Bakery & Patisserie · Delhi
+            Artisan Bakery & Patisserie · West Bengal
           </motion.p>
 
           <motion.h1
@@ -159,7 +159,7 @@ export default function Hero({ items }: { items?: GalleryItem[] }) {
         >
           <span>✦ Baked Fresh Daily</span>
           <span>✦ 100% Vegetarian Kitchen</span>
-          <span>✦ Same-Day Delhi Delivery</span>
+          <span>✦ Same-Day West Bengal Delivery</span>
           <span>✦ FSSAI Certified</span>
         </motion.div>
       </BubbleBackground>

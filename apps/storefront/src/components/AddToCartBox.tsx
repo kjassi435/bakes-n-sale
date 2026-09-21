@@ -171,7 +171,7 @@ export default function AddToCartBox({ product }: { product: any }) {
 
       {/* Trust strip */}
       <div className="grid grid-cols-3 gap-2 rounded-2xl bg-cream/70 p-4 text-center text-[11px] font-semibold text-mocha">
-        <span>🚚 Same-day Delhi delivery</span>
+        <span>🚚 Same-day West Bengal delivery</span>
         <span>❄️ Freshness-sealed packing</span>
         <span>↩️ Quality-guaranteed</span>
       </div>

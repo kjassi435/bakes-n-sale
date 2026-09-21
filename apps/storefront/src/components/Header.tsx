@@ -19,7 +19,7 @@ const NAV = [
 ];
 
 const DEFAULT_ANNOUNCEMENTS = [
-  'Free delivery across Delhi on orders above ₹999',
+  'Free delivery across West Bengal on orders above ₹999',
   'Baked fresh every morning — orders before 2 PM ship same day',
   'Use code WELCOME10 for 10% off your first order',
 ];

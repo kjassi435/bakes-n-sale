@@ -65,6 +65,10 @@ export class ProductUpsertDto {
 
   @IsOptional()
   @IsString()
+  deliveryInfo?: string;
+
+  @IsOptional()
+  @IsString()
   sku?: string;
 
   @IsOptional()

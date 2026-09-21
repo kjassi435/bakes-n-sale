@@ -43,6 +43,15 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   if (!data) notFound();
   const product = data.product;
   const nutrition = product.nutrition as Record<string, string | number> | null;
+  const deliveryPoints: string[] =
+    typeof product.deliveryInfo === 'string' && product.deliveryInfo.trim()
+      ? product.deliveryInfo.split('\n').map((s: string) => s.trim()).filter(Boolean)
+      : [
+          'Same-day delivery across West Bengal for orders placed before 2 PM.',
+          'Choose your preferred date & 2-hour slot at checkout.',
+          'Cakes travel in chilled, tamper-proof boxes.',
+          'Best enjoyed within 3 days; store cool and dry.',
+        ];
 
   return (
     <div className="container-x py-10">
@@ -129,10 +138,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         <div className="card-lux p-7">
           <h3 className="font-display text-lg font-semibold">Delivery & Freshness</h3>
           <ul className="mt-3 space-y-2.5 text-sm text-mocha">
-            <li>✦ Same-day delivery across Delhi for orders placed before 2 PM.</li>
-            <li>✦ Choose your preferred date & 2-hour slot at checkout.</li>
-            <li>✦ Cakes travel in chilled, tamper-proof boxes.</li>
-            <li>✦ Best enjoyed within 3 days; store cool and dry.</li>
+            {deliveryPoints.map((d, i) => (
+              <li key={i}>✦ {d}</li>
+            ))}
           </ul>
         </div>
       </div>

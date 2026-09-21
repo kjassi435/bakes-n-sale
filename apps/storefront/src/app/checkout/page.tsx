@@ -6,7 +6,7 @@ import { DELIVERY_SLOTS, formatINR } from '@bakery/shared';
 import { api } from '@/lib/api';
 import { useStore } from '@/lib/store';
 
-const EMPTY_ADDRESS = { label: 'Home', fullName: '', phone: '', line1: '', line2: '', city: 'New Delhi', state: 'Delhi', pincode: '', isDefault: false };
+const EMPTY_ADDRESS = { label: 'Home', fullName: '', phone: '', line1: '', line2: '', city: 'Kolkata', state: 'West Bengal', pincode: '', isDefault: false };
 
 export default function CheckoutPage() {
   const { user, authLoading, cart, cartHydrated, cartSubtotal, clearCart, showToast } = useStore();

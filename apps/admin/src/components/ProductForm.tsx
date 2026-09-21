@@ -6,12 +6,35 @@ import { ALL_TAGS } from '@bakery/shared';
 import { api, imgSrc, normalizeImageUrl } from '@/lib/api';
 
 const EMPTY = {
-  name: '', slug: '', categoryId: '', shortDescription: '', description: '', sku: '',
+  name: '', slug: '', categoryId: '', shortDescription: '', description: '', deliveryInfo: '', sku: '',
   basePrice: 0, compareAtPrice: null as number | null, stock: 0, lowStockThreshold: 5,
   isActive: true, isFeatured: false, isChefSpecial: false, isPreorder: false,
   images: [] as string[], tags: [] as string[], allergens: [] as string[],
   variants: [] as any[],
 };
+
+/** Nutrition stored as JSON in DB, edited as plain "Label: value" lines. */
+function nutritionToLines(n: any): string {
+  if (!n || typeof n !== 'object') return '';
+  return Object.entries(n).map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`).join('\n');
+}
+
+function parseNutritionText(text: string): any {
+  const t = text.trim();
+  if (!t) return null;
+  // Backward compat: accept pasted JSON too
+  if (t.startsWith('{')) return JSON.parse(t);
+  const out: Record<string, string | number> = {};
+  for (const line of t.split('\n')) {
+    const i = line.indexOf(':');
+    if (i <= 0) continue;
+    const key = line.slice(0, i).trim().toLowerCase();
+    const raw = line.slice(i + 1).trim();
+    if (!key || !raw) continue;
+    out[key] = /^-?\d+(\.\d+)?$/.test(raw) ? Number(raw) : raw;
+  }
+  return Object.keys(out).length ? out : null;
+}
 
 export default function ProductForm({ productId }: { productId?: string }) {
   const router = useRouter();
@@ -20,6 +43,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
   const [imagesText, setImagesText] = useState('');
   const [allergensText, setAllergensText] = useState('');
   const [nutritionText, setNutritionText] = useState('');
+  const [customTag, setCustomTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
@@ -35,13 +59,20 @@ export default function ProductForm({ productId }: { productId?: string }) {
           });
           setImagesText((p.images ?? []).join('\n'));
           setAllergensText((p.allergens ?? []).join(', '));
-          setNutritionText(p.nutrition ? JSON.stringify(p.nutrition, null, 2) : '');
+          setNutritionText(nutritionToLines(p.nutrition));
         })
         .catch((e) => setError(e.message));
     }
   }, [productId]);
 
   const set = (k: string, v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+
+  const addCustomTag = () => {
+    const t = customTag.trim();
+    if (!t) return;
+    setForm((f: any) => ({ ...f, tags: f.tags.includes(t) ? f.tags : [...f.tags, t] }));
+    setCustomTag('');
+  };
 
   const setVariant = (i: number, k: string, v: any) => {
     setForm((f: any) => {
@@ -58,9 +89,9 @@ export default function ProductForm({ productId }: { productId?: string }) {
     let nutrition: any = null;
     if (nutritionText.trim()) {
       try {
-        nutrition = JSON.parse(nutritionText);
+        nutrition = parseNutritionText(nutritionText);
       } catch {
-        setError('Nutrition JSON is invalid');
+        setError('Nutrition is invalid — use one "Label: value" per line (e.g. Calories: 130).');
         setSaving(false);
         return;
       }
@@ -71,6 +102,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
       categoryId: form.categoryId || undefined,
       shortDescription: form.shortDescription,
       description: form.description,
+      deliveryInfo: form.deliveryInfo || undefined,
       sku: form.sku || undefined,
       basePrice: Number(form.basePrice),
       compareAtPrice: form.compareAtPrice != null && form.compareAtPrice !== '' ? Number(form.compareAtPrice) : undefined,
@@ -134,12 +166,17 @@ export default function ProductForm({ productId }: { productId?: string }) {
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs font-bold text-mocha uppercase">Short description</label>
-            <input value={form.shortDescription ?? ''} onChange={(e) => set('shortDescription', e.target.value)} className="input-adm" />
+            <label className="mb-1 block text-xs font-bold text-mocha uppercase">Short description (under product name)</label>
+            <input value={form.shortDescription ?? ''} onChange={(e) => set('shortDescription', e.target.value)} placeholder="One line under the product name" className="input-adm" />
           </div>
           <div>
-            <label className="mb-1 block text-xs font-bold text-mocha uppercase">Full description</label>
-            <textarea rows={5} value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} className="input-adm resize-none" />
+            <label className="mb-1 block text-xs font-bold text-mocha uppercase">The Craft — full description</label>
+            <textarea rows={5} value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} placeholder="Shows in the 'The Craft' box on the product page" className="input-adm resize-none" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-bold text-mocha uppercase">Delivery & Freshness (one point per line)</label>
+            <textarea rows={4} value={form.deliveryInfo ?? ''} onChange={(e) => set('deliveryInfo', e.target.value)} placeholder={'Same-day delivery across West Bengal for orders placed before 2 PM.\nChoose your preferred date & 2-hour slot at checkout.\nBest enjoyed within 3 days; store cool and dry.'} className="input-adm resize-none" />
+            <p className="mt-1 text-[11px] text-mocha">Shows in the &apos;Delivery & Freshness&apos; box. Leave blank to use the default points.</p>
           </div>
         </div>
 
@@ -241,13 +278,24 @@ export default function ProductForm({ productId }: { productId?: string }) {
                 {t}
               </button>
             ))}
+            {form.tags.filter((t: string) => !(ALL_TAGS as readonly string[]).includes(t)).map((t: string) => (
+              <span key={t} className="flex items-center gap-1 rounded-full border border-gold bg-goldsoft px-2.5 py-1 text-[11px] font-semibold text-cocoa">
+                {t}
+                <button type="button" onClick={() => set('tags', form.tags.filter((x: string) => x !== t))} className="text-red-600 hover:underline" title="Remove tag">✕</button>
+              </span>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input value={customTag} onChange={(e) => setCustomTag(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag(); } }} placeholder="New tag (e.g. Bestseller)" className="input-adm !py-2 text-xs" />
+            <button type="button" onClick={addCustomTag} className="btn-adm-outline shrink-0 !px-3 !py-2 text-xs">+ Add</button>
           </div>
         </div>
 
         <div className="card-adm space-y-3 p-6">
           <h2 className="font-display text-lg font-semibold">Allergens & Nutrition</h2>
-          <input value={allergensText} onChange={(e) => setAllergensText(e.target.value)} placeholder="Allergens (comma separated)" className="input-adm text-xs" />
-          <textarea rows={4} value={nutritionText} onChange={(e) => setNutritionText(e.target.value)} placeholder={'{ "serving": "30 g", "calories": 130 }'} className="input-adm resize-none font-mono text-xs" />
+          <input value={allergensText} onChange={(e) => setAllergensText(e.target.value)} placeholder="Allergens — comma separated (e.g. Gluten, Dairy, Nuts)" className="input-adm text-xs" />
+          <textarea rows={5} value={nutritionText} onChange={(e) => setNutritionText(e.target.value)} placeholder={'One per line — Label: value\nServing: 30 g\nCalories: 130\nFat: 6 g\nCarbs: 17 g\nProtein: 2 g'} className="input-adm resize-none font-mono text-xs" />
+          <p className="text-[11px] text-mocha">Plain text — no JSON needed. Saved automatically in the right format.</p>
         </div>
 
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}

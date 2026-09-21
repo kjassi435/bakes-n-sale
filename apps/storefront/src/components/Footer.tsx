@@ -14,7 +14,7 @@ async function getFooterSettings() {
 
 export default async function Footer() {
   const f = await getFooterSettings();
-  const about = f.about || 'Baking treasured recipes since 1998 — signature cakes, artisan rusk, small-batch cookies and traditional namkeen, made fresh every morning in Delhi.';
+  const about = f.about || 'Baking treasured recipes since 1998 — signature cakes, artisan rusk, small-batch cookies and traditional namkeen, made fresh every morning in West Bengal.';
   const address = f.address || '82/7 Shaikh Para Lane, Howrah - 711103. Open daily 8 AM – 9 PM';
   const phone = f.phone || '+91 11 4000 1234';
   const phoneHref = `tel:+91${phone.replace(/\D/g, '').slice(-10)}`;
