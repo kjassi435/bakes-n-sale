@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ALL_TAGS } from '@bakery/shared';
 import { api, imgSrc, normalizeImageUrl } from '@/lib/api';
 
@@ -36,8 +36,12 @@ function parseNutritionText(text: string): any {
   return Object.keys(out).length ? out : null;
 }
 
+/** Browser auto-draft for the New Product form (survives refresh). Server drafts = isActive:false. */
+const DRAFT_KEY = 'bns-product-draft-new';
+
 export default function ProductForm({ productId }: { productId?: string }) {
   const router = useRouter();
+  const modeRef = useRef<'draft' | 'publish'>('publish');
   const [form, setForm] = useState<any>(EMPTY);
   const [categories, setCategories] = useState<any[]>([]);
   const [imagesText, setImagesText] = useState('');
@@ -47,6 +51,55 @@ export default function ProductForm({ productId }: { productId?: string }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [errorField, setErrorField] = useState<string | null>(null);
+  const [draftReady, setDraftReady] = useState(false);
+  const [draftRestored, setDraftRestored] = useState(false);
+
+  // Load browser draft once (new form only)
+  useEffect(() => {
+    if (productId) return;
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        const d = JSON.parse(raw);
+        if (d && typeof d === 'object') {
+          if (d.form && typeof d.form === 'object') setForm({ ...EMPTY, ...d.form });
+          if (typeof d.imagesText === 'string') setImagesText(d.imagesText);
+          if (typeof d.allergensText === 'string') setAllergensText(d.allergensText);
+          if (typeof d.nutritionText === 'string') setNutritionText(d.nutritionText);
+          const hasContent = Boolean(
+            d.form?.name || d.imagesText || d.allergensText || d.nutritionText || (d.form?.variants?.length ?? 0) > 0,
+          );
+          if (hasContent) setDraftRestored(true);
+        }
+      }
+    } catch {
+      /* ignore corrupt draft */
+    }
+    setDraftReady(true);
+  }, [productId]);
+
+  // Autosave browser draft on every change (new form only)
+  useEffect(() => {
+    if (productId || !draftReady) return;
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, imagesText, allergensText, nutritionText, savedAt: Date.now() }));
+    } catch {
+      /* storage full/blocked — ignore */
+    }
+  }, [productId, draftReady, form, imagesText, allergensText, nutritionText]);
+
+  const discardDraft = () => {
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+    setForm(EMPTY);
+    setImagesText('');
+    setAllergensText('');
+    setNutritionText('');
+    setDraftRestored(false);
+  };
 
 /** Map validator messages ("basePrice must not be...") to field keys. */
 const KNOWN_FIELDS = ['name', 'slug', 'categoryId', 'sku', 'shortDescription', 'description', 'deliveryInfo', 'basePrice', 'compareAtPrice', 'stock', 'lowStockThreshold', 'images', 'tags', 'allergens', 'nutrition', 'variants'];
@@ -101,6 +154,7 @@ function fieldFromMessage(msg: string): string | null {
     setSaving(true);
     setError('');
     setErrorField(null);
+    const asDraft = !productId && modeRef.current === 'draft';
     let nutrition: any = null;
     if (nutritionText.trim()) {
       try {
@@ -124,7 +178,7 @@ function fieldFromMessage(msg: string): string | null {
       compareAtPrice: form.compareAtPrice != null && form.compareAtPrice !== '' ? Number(form.compareAtPrice) : undefined,
       stock: Number(form.stock),
       lowStockThreshold: Number(form.lowStockThreshold),
-      isActive: form.isActive,
+      isActive: asDraft ? false : form.isActive,
       isFeatured: form.isFeatured,
       isChefSpecial: form.isChefSpecial,
       isPreorder: form.isPreorder,
@@ -140,6 +194,11 @@ function fieldFromMessage(msg: string): string | null {
     try {
       if (productId) await api(`/admin/products/${productId}`, { method: 'PATCH', body });
       else await api('/admin/products', { method: 'POST', body });
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
       router.push('/products');
     } catch (err: any) {
       setError(err.message ?? 'Could not save product');
@@ -150,6 +209,15 @@ function fieldFromMessage(msg: string): string | null {
 
   return (
     <form onSubmit={submit} className="grid gap-6 xl:grid-cols-[1fr_360px]">
+      {!productId && draftRestored && (
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-goldsoft/60 p-4 text-sm xl:col-span-2">
+          <p className="font-semibold text-cocoa">📝 Unsaved draft restored — your half-filled form survived the refresh.</p>
+          <button type="button" onClick={discardDraft} className="text-xs font-bold text-red-600 hover:underline">Discard draft & start fresh</button>
+        </div>
+      )}
+      {!productId && !draftRestored && (
+        <p className="text-xs text-mocha xl:col-span-2">✎ Everything you type here auto-saves in this browser — safe to refresh halfway.</p>
+      )}
       <div className="space-y-6">
         <div className="card-adm space-y-4 p-6">
           <h2 className="font-display text-lg font-semibold">Basics</h2>
@@ -332,9 +400,34 @@ function fieldFromMessage(msg: string): string | null {
 
         {error && <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{error}</p>}
         <div className="flex gap-3">
-          <button disabled={saving} className="btn-adm flex-1">{saving ? 'Saving…' : productId ? 'Save Changes' : 'Create Product'}</button>
+          {productId ? (
+            <button disabled={saving} className="btn-adm flex-1">{saving ? 'Saving…' : 'Save Changes'}</button>
+          ) : (
+            <>
+              <button
+                type="submit"
+                disabled={saving}
+                onClick={() => { modeRef.current = 'draft'; }}
+                className="btn-adm-outline flex-1"
+                title="Save hidden — not visible on storefront until published"
+              >
+                {saving ? 'Saving…' : 'Save as Draft'}
+              </button>
+              <button
+                type="submit"
+                disabled={saving}
+                onClick={() => { modeRef.current = 'publish'; }}
+                className="btn-adm flex-1"
+              >
+                {saving ? 'Saving…' : 'Publish'}
+              </button>
+            </>
+          )}
           <button type="button" onClick={() => router.push('/products')} className="btn-adm-outline">Cancel</button>
         </div>
+        {!productId && (
+          <p className="text-[11px] text-mocha">Draft = hidden from storefront. Find it under Products → Draft filter, then Edit or Delete anytime.</p>
+        )}
       </div>
     </form>
   );
