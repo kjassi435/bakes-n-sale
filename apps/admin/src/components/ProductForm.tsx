@@ -44,7 +44,8 @@ export default function ProductForm({ productId }: { productId?: string }) {
   const modeRef = useRef<'draft' | 'publish'>('publish');
   const [form, setForm] = useState<any>(EMPTY);
   const [categories, setCategories] = useState<any[]>([]);
-  const [imagesText, setImagesText] = useState('');
+  const [featuredImage, setFeaturedImage] = useState('');
+  const [galleryImages, setGalleryImages] = useState<string[]>([]);
   const [allergensText, setAllergensText] = useState('');
   const [nutritionText, setNutritionText] = useState('');
   const [customTag, setCustomTag] = useState('');
@@ -63,11 +64,19 @@ export default function ProductForm({ productId }: { productId?: string }) {
         const d = JSON.parse(raw);
         if (d && typeof d === 'object') {
           if (d.form && typeof d.form === 'object') setForm({ ...EMPTY, ...d.form });
-          if (typeof d.imagesText === 'string') setImagesText(d.imagesText);
+          if (typeof d.featuredImage === 'string') setFeaturedImage(d.featuredImage);
+          if (Array.isArray(d.galleryImages)) setGalleryImages(d.galleryImages.filter((s: any) => typeof s === 'string').slice(0, 4));
+          else if (typeof d.imagesText === 'string') {
+            // backward compat: old one-per-line draft
+            const lines = d.imagesText.split('\n').map((s: string) => s.trim()).filter(Boolean);
+            setFeaturedImage(lines[0] ?? '');
+            setGalleryImages(lines.slice(1, 5));
+          }
           if (typeof d.allergensText === 'string') setAllergensText(d.allergensText);
           if (typeof d.nutritionText === 'string') setNutritionText(d.nutritionText);
           const hasContent = Boolean(
-            d.form?.name || d.imagesText || d.allergensText || d.nutritionText || (d.form?.variants?.length ?? 0) > 0,
+            d.form?.name || d.featuredImage || d.imagesText || d.allergensText || d.nutritionText ||
+            (d.galleryImages?.length ?? 0) > 0 || (d.form?.variants?.length ?? 0) > 0,
           );
           if (hasContent) setDraftRestored(true);
         }
@@ -82,11 +91,11 @@ export default function ProductForm({ productId }: { productId?: string }) {
   useEffect(() => {
     if (productId || !draftReady) return;
     try {
-      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, imagesText, allergensText, nutritionText, savedAt: Date.now() }));
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ form, featuredImage, galleryImages, allergensText, nutritionText, savedAt: Date.now() }));
     } catch {
       /* storage full/blocked — ignore */
     }
-  }, [productId, draftReady, form, imagesText, allergensText, nutritionText]);
+  }, [productId, draftReady, form, featuredImage, galleryImages, allergensText, nutritionText]);
 
   const discardDraft = () => {
     try {
@@ -95,11 +104,17 @@ export default function ProductForm({ productId }: { productId?: string }) {
       /* ignore */
     }
     setForm(EMPTY);
-    setImagesText('');
+    setFeaturedImage('');
+    setGalleryImages([]);
     setAllergensText('');
     setNutritionText('');
     setDraftRestored(false);
   };
+
+  const setGallerySlot = (i: number, v: string) =>
+    setGalleryImages((g) => g.map((s, j) => (j === i ? v : s)));
+  const removeGallerySlot = (i: number) =>
+    setGalleryImages((g) => g.filter((_, j) => j !== i));
 
 /** Map validator messages ("basePrice must not be...") to field keys. */
 const KNOWN_FIELDS = ['name', 'slug', 'categoryId', 'sku', 'shortDescription', 'description', 'deliveryInfo', 'basePrice', 'compareAtPrice', 'stock', 'lowStockThreshold', 'images', 'tags', 'allergens', 'nutrition', 'variants'];
@@ -120,7 +135,9 @@ function fieldFromMessage(msg: string): string | null {
             compareAtPrice: p.compareAtPrice ?? null,
             variants: (p.variants ?? []).map((v: any) => ({ ...v })),
           });
-          setImagesText((p.images ?? []).join('\n'));
+          const imgs = p.images ?? [];
+          setFeaturedImage(imgs[0] ?? '');
+          setGalleryImages(imgs.slice(1, 5));
           setAllergensText((p.allergens ?? []).join(', '));
           setNutritionText(nutritionToLines(p.nutrition));
         })
@@ -182,7 +199,7 @@ function fieldFromMessage(msg: string): string | null {
       isFeatured: form.isFeatured,
       isChefSpecial: form.isChefSpecial,
       isPreorder: form.isPreorder,
-      images: imagesText.split('\n').map((s: string) => normalizeImageUrl(s.trim())).filter(Boolean),
+      images: [featuredImage, ...galleryImages].map((s: string) => normalizeImageUrl((s ?? '').trim())).filter(Boolean),
       tags: form.tags,
       allergens: allergensText.replace(/^contains:\s*/i, '').split(',').map((s: string) => s.trim()).filter(Boolean),
       nutrition,
@@ -339,28 +356,59 @@ function fieldFromMessage(msg: string): string | null {
           ))}
         </div>
 
-        <div className="card-adm space-y-3 p-6">
-          <h2 className="font-display text-lg font-semibold">Images</h2>
-          <textarea
-            rows={3}
-            value={imagesText}
-            onChange={(e) => setImagesText(e.target.value)}
-            placeholder={'Paste Google Drive share link, stock-photo URL or /images/… path\n(one per line — live preview below)'}
-            className={fieldCls('images', 'resize-none font-mono text-xs ')}
+        <div className="card-adm space-y-4 p-6">
+          <h2 className="font-display text-lg font-semibold">Featured Image</h2>
+          <input
+            value={featuredImage}
+            onChange={(e) => setFeaturedImage(e.target.value)}
+            placeholder="Paste Google Drive share link, stock-photo URL or /images/… path"
+            className={fieldCls('images', 'font-mono text-xs ')}
           />
           <FieldErr k="images" />
-          {imagesText.trim() && (
+          {featuredImage.trim() ? (
             <div>
-              <p className="mb-1 text-[11px] font-bold text-mocha uppercase">Live preview</p>
-              <div className="grid grid-cols-3 gap-2">
-                {imagesText.split('\n').map((s: string) => s.trim()).filter(Boolean).slice(0, 3).map((s: string, i: number) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={i} src={imgSrc(normalizeImageUrl(s))} alt={`preview ${i + 1}`} className="aspect-square w-full rounded-lg border border-espresso/10 object-cover" />
-                ))}
-              </div>
+              <p className="mb-1 text-[11px] font-bold text-mocha uppercase">Main photo — shows first on the product page</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imgSrc(normalizeImageUrl(featuredImage))} alt="featured preview" className="aspect-square w-full max-w-[220px] rounded-xl border border-espresso/10 bg-white object-contain" />
+            </div>
+          ) : (
+            <p className="text-[11px] text-mocha">No featured image yet — the storefront will show a placeholder.</p>
+          )}
+          <p className="text-[11px] text-mocha">Google Drive share links auto-convert to direct images on save.</p>
+        </div>
+
+        <div className="card-adm space-y-3 p-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold">Photo Gallery — up to 4</h2>
+            {galleryImages.length < 4 ? (
+              <button type="button" onClick={() => setGalleryImages((g) => [...g, ''])} className="btn-adm-outline !px-3 !py-1.5 text-xs">+ Add Photo</button>
+            ) : (
+              <span className="text-xs font-bold text-green-700">✓ You have done all four.</span>
+            )}
+          </div>
+          {galleryImages.length === 0 ? (
+            <p className="text-xs text-mocha">No gallery photos — press + to add. Thumbnails appear on the product page only when a gallery exists.</p>
+          ) : (
+            <div className="space-y-3">
+              {galleryImages.map((s, i) => (
+                <div key={i} className="flex items-start gap-3 rounded-lg border border-espresso/8 bg-cream/40 p-3">
+                  {s.trim() ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={imgSrc(normalizeImageUrl(s))} alt={`gallery ${i + 1}`} className="h-16 w-16 shrink-0 rounded-lg border border-espresso/10 bg-white object-contain" />
+                  ) : (
+                    <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-cream text-xl">🖼️</span>
+                  )}
+                  <input
+                    value={s}
+                    onChange={(e) => setGallerySlot(i, e.target.value)}
+                    placeholder={`Photo ${i + 1} link — Drive share link, URL or /images/… path`}
+                    className="input-adm font-mono !py-2 text-xs"
+                  />
+                  <button type="button" onClick={() => removeGallerySlot(i)} className="shrink-0 p-1 text-red-600 hover:underline" title="Remove photo">✕</button>
+                </div>
+              ))}
             </div>
           )}
-          <p className="text-[11px] text-mocha">Google Drive share links auto-convert to direct images on save. Preview updates as you type.</p>
         </div>
 
         <div className="card-adm space-y-3 p-6">

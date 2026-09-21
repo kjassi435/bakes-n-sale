@@ -4,6 +4,7 @@ import { cache } from 'react';
 import type { Metadata } from 'next';
 import { API_URL } from '@/lib/api';
 import AddToCartBox from '@/components/AddToCartBox';
+import ProductGallery from '@/components/ProductGallery';
 import ReviewsBox from '@/components/ReviewsBox';
 import ProductCard from '@/components/ProductCard';
 import RatingStars from '@/components/RatingStars';
@@ -71,23 +72,13 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
       </nav>
 
       <div className="grid gap-12 lg:grid-cols-2">
-        {/* Gallery */}
-        <div>
-          <div className="card-lux overflow-hidden">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={product.images?.[0] ?? '/images/products/detail.svg'} alt={product.name} className="aspect-square w-full object-cover" />
-          </div>
-          {product.images?.length > 1 && (
-            <div className="mt-4 grid grid-cols-4 gap-3">
-              {product.images.map((img: string, i: number) => (
-                <div key={i} className="card-lux overflow-hidden opacity-90">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={img} alt={`${product.name} ${i + 1}`} className="aspect-square w-full object-cover" />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* Gallery — full image + hover zoom + thumbnails */}
+        <ProductGallery
+          images={product.images}
+          name={product.name}
+          basePrice={product.basePrice}
+          compareAtPrice={product.compareAtPrice}
+        />
 
         {/* Info */}
         <div>
