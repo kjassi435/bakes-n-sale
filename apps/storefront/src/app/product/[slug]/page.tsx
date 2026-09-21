@@ -46,7 +46,10 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const nutrition = product.nutrition as Record<string, string | number> | null;
   const deliveryPoints: string[] =
     typeof product.deliveryInfo === 'string' && product.deliveryInfo.trim()
-      ? product.deliveryInfo.split('\n').map((s: string) => s.trim()).filter(Boolean)
+      ? product.deliveryInfo
+          .split('\n')
+          .map((s: string) => s.trim().replace(/^[✦•\-*]\s*/, ''))
+          .filter(Boolean)
       : [
           'Same-day delivery across West Bengal for orders placed before 2 PM.',
           'Choose your preferred date & 2-hour slot at checkout.',
