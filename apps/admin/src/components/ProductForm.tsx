@@ -46,6 +46,16 @@ export default function ProductForm({ productId }: { productId?: string }) {
   const [customTag, setCustomTag] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [errorField, setErrorField] = useState<string | null>(null);
+
+/** Map validator messages ("basePrice must not be...") to field keys. */
+const KNOWN_FIELDS = ['name', 'slug', 'categoryId', 'sku', 'shortDescription', 'description', 'deliveryInfo', 'basePrice', 'compareAtPrice', 'stock', 'lowStockThreshold', 'images', 'tags', 'allergens', 'nutrition', 'variants'];
+function fieldFromMessage(msg: string): string | null {
+  for (const k of KNOWN_FIELDS) {
+    if (msg === k || msg.startsWith(`${k} `) || msg.startsWith(`${k} must`) || msg.startsWith(`property ${k}`)) return k;
+  }
+  return null;
+}
 
   useEffect(() => {
     api('/categories').then(setCategories).catch(() => {});
@@ -82,16 +92,22 @@ export default function ProductForm({ productId }: { productId?: string }) {
     });
   };
 
+  const fieldCls = (k: string, extra = '') => `${extra}input-adm${errorField === k ? ' !border-red-500 !ring-2 !ring-red-200' : ''}`;
+  const FieldErr = ({ k }: { k: string }) =>
+    errorField === k && error ? <p className="mt-1 text-xs font-semibold text-red-600">⚠ {error}</p> : null;
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
     setError('');
+    setErrorField(null);
     let nutrition: any = null;
     if (nutritionText.trim()) {
       try {
         nutrition = parseNutritionText(nutritionText);
       } catch {
         setError('Nutrition is invalid — use one "Label: value" per line (e.g. Calories: 130).');
+        setErrorField('nutrition');
         setSaving(false);
         return;
       }
@@ -114,7 +130,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
       isPreorder: form.isPreorder,
       images: imagesText.split('\n').map((s: string) => normalizeImageUrl(s.trim())).filter(Boolean),
       tags: form.tags,
-      allergens: allergensText.split(',').map((s: string) => s.trim()).filter(Boolean),
+      allergens: allergensText.replace(/^contains:\s*/i, '').split(',').map((s: string) => s.trim()).filter(Boolean),
       nutrition,
       variants: form.variants.map((v: any) => ({
         name: v.name, option1: v.option1 || undefined, option2: v.option2 || undefined,
@@ -127,6 +143,7 @@ export default function ProductForm({ productId }: { productId?: string }) {
       router.push('/products');
     } catch (err: any) {
       setError(err.message ?? 'Could not save product');
+      setErrorField(err.field ?? fieldFromMessage(err.message ?? ''));
       setSaving(false);
     }
   };
@@ -139,15 +156,17 @@ export default function ProductForm({ productId }: { productId?: string }) {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">Name *</label>
-              <input required value={form.name} onChange={(e) => set('name', e.target.value)} className="input-adm" />
+              <input required value={form.name} onChange={(e) => set('name', e.target.value)} className={fieldCls('name')} />
+              <FieldErr k="name" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">Slug (URL)</label>
-              <input value={form.slug} onChange={(e) => set('slug', e.target.value)} placeholder="auto-generated from name" className="input-adm" />
+              <input value={form.slug} onChange={(e) => set('slug', e.target.value)} placeholder="auto-generated from name" className={fieldCls('slug')} />
+              <FieldErr k="slug" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">Category</label>
-              <select value={form.categoryId ?? ''} onChange={(e) => set('categoryId', e.target.value)} className="input-adm">
+              <select value={form.categoryId ?? ''} onChange={(e) => set('categoryId', e.target.value)} className={fieldCls('categoryId')}>
                 <option value="">— None —</option>
                 {categories.map((c) => (
                   <optgroup key={c.id} label={`${c.name} (${c.productCount ?? 0})`}>
@@ -158,24 +177,29 @@ export default function ProductForm({ productId }: { productId?: string }) {
                   </optgroup>
                 ))}
               </select>
+              <FieldErr k="categoryId" />
               <p className="mt-1 text-[11px] text-mocha">Main categories + 40 subcategories. Pick the most specific.</p>
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">SKU</label>
-              <input value={form.sku ?? ''} onChange={(e) => set('sku', e.target.value)} className="input-adm" />
+              <input value={form.sku ?? ''} onChange={(e) => set('sku', e.target.value)} placeholder="Leave blank for auto" className={fieldCls('sku')} />
+              <FieldErr k="sku" />
             </div>
           </div>
           <div>
             <label className="mb-1 block text-xs font-bold text-mocha uppercase">Short description (under product name)</label>
-            <input value={form.shortDescription ?? ''} onChange={(e) => set('shortDescription', e.target.value)} placeholder="One line under the product name" className="input-adm" />
+            <input value={form.shortDescription ?? ''} onChange={(e) => set('shortDescription', e.target.value)} placeholder="One line under the product name" className={fieldCls('shortDescription')} />
+            <FieldErr k="shortDescription" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-bold text-mocha uppercase">The Craft — full description</label>
-            <textarea rows={5} value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} placeholder="Shows in the 'The Craft' box on the product page" className="input-adm resize-none" />
+            <textarea rows={5} value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} placeholder="Shows in the 'The Craft' box on the product page" className={fieldCls('description', 'resize-none ')} />
+            <FieldErr k="description" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-bold text-mocha uppercase">Delivery & Freshness (one point per line)</label>
-            <textarea rows={4} value={form.deliveryInfo ?? ''} onChange={(e) => set('deliveryInfo', e.target.value)} placeholder={'Same-day delivery across West Bengal for orders placed before 2 PM.\nChoose your preferred date & 2-hour slot at checkout.\nBest enjoyed within 3 days; store cool and dry.'} className="input-adm resize-none" />
+            <textarea rows={4} value={form.deliveryInfo ?? ''} onChange={(e) => set('deliveryInfo', e.target.value)} placeholder={'Same-day delivery across West Bengal for orders placed before 2 PM.\nChoose your preferred date & 2-hour slot at checkout.\nBest enjoyed within 3 days; store cool and dry.'} className={fieldCls('deliveryInfo', 'resize-none ')} />
+            <FieldErr k="deliveryInfo" />
             <p className="mt-1 text-[11px] text-mocha">Shows in the &apos;Delivery & Freshness&apos; box. Leave blank to use the default points.</p>
           </div>
         </div>
@@ -185,28 +209,33 @@ export default function ProductForm({ productId }: { productId?: string }) {
           <div className="grid gap-4 sm:grid-cols-4">
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">Base price (₹) *</label>
-              <input type="number" min={0} step="0.01" required value={form.basePrice} onChange={(e) => set('basePrice', e.target.value)} className="input-adm" />
+              <input type="number" min={0} step="0.01" required value={form.basePrice} onChange={(e) => set('basePrice', e.target.value)} className={fieldCls('basePrice')} />
+              <FieldErr k="basePrice" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">Compare-at (₹)</label>
-              <input type="number" min={0} step="0.01" value={form.compareAtPrice ?? ''} onChange={(e) => set('compareAtPrice', e.target.value === '' ? null : e.target.value)} className="input-adm" placeholder="for offers" />
+              <input type="number" min={0} step="0.01" value={form.compareAtPrice ?? ''} onChange={(e) => set('compareAtPrice', e.target.value === '' ? null : e.target.value)} className={fieldCls('compareAtPrice')} placeholder="for offers" />
+              <FieldErr k="compareAtPrice" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">Stock *</label>
-              <input type="number" min={0} required value={form.stock} onChange={(e) => set('stock', e.target.value)} className="input-adm" />
+              <input type="number" min={0} required value={form.stock} onChange={(e) => set('stock', e.target.value)} className={fieldCls('stock')} />
+              <FieldErr k="stock" />
             </div>
             <div>
               <label className="mb-1 block text-xs font-bold text-mocha uppercase">Low-stock alert at</label>
-              <input type="number" min={0} value={form.lowStockThreshold} onChange={(e) => set('lowStockThreshold', e.target.value)} className="input-adm" />
+              <input type="number" min={0} value={form.lowStockThreshold} onChange={(e) => set('lowStockThreshold', e.target.value)} className={fieldCls('lowStockThreshold')} />
+              <FieldErr k="lowStockThreshold" />
             </div>
           </div>
         </div>
 
-        <div className="card-adm p-6">
+        <div className={`card-adm p-6${errorField === 'variants' ? ' !border-red-500 !ring-2 !ring-red-200' : ''}`}>
           <div className="flex items-center justify-between">
             <h2 className="font-display text-lg font-semibold">Variants (sizes / weights)</h2>
             <button type="button" onClick={() => set('variants', [...form.variants, { name: '', option1: '', option2: '', price: form.basePrice, stock: 0, isActive: true }])} className="btn-adm-outline !px-3 !py-1.5 text-xs">+ Add Variant</button>
           </div>
+          <FieldErr k="variants" />
           {form.variants.length === 0 ? (
             <p className="mt-3 text-sm text-mocha">No variants — the base price & stock apply.</p>
           ) : (
@@ -249,8 +278,9 @@ export default function ProductForm({ productId }: { productId?: string }) {
             value={imagesText}
             onChange={(e) => setImagesText(e.target.value)}
             placeholder={'Paste Google Drive share link, stock-photo URL or /images/… path\n(one per line — live preview below)'}
-            className="input-adm resize-none font-mono text-xs"
+            className={fieldCls('images', 'resize-none font-mono text-xs ')}
           />
+          <FieldErr k="images" />
           {imagesText.trim() && (
             <div>
               <p className="mb-1 text-[11px] font-bold text-mocha uppercase">Live preview</p>
@@ -293,8 +323,10 @@ export default function ProductForm({ productId }: { productId?: string }) {
 
         <div className="card-adm space-y-3 p-6">
           <h2 className="font-display text-lg font-semibold">Allergens & Nutrition</h2>
-          <input value={allergensText} onChange={(e) => setAllergensText(e.target.value)} placeholder="Allergens — comma separated (e.g. Gluten, Dairy, Nuts)" className="input-adm text-xs" />
-          <textarea rows={5} value={nutritionText} onChange={(e) => setNutritionText(e.target.value)} placeholder={'One per line — Label: value\nServing: 30 g\nCalories: 130\nFat: 6 g\nCarbs: 17 g\nProtein: 2 g'} className="input-adm resize-none font-mono text-xs" />
+          <input value={allergensText} onChange={(e) => setAllergensText(e.target.value)} placeholder="Allergens — comma separated (e.g. Gluten, Dairy, Nuts)" className={fieldCls('allergens', 'text-xs ')} />
+          <FieldErr k="allergens" />
+          <textarea rows={5} value={nutritionText} onChange={(e) => setNutritionText(e.target.value)} placeholder={'One per line — Label: value\nServing: 30 g\nCalories: 130\nFat: 6 g\nCarbs: 17 g\nProtein: 2 g'} className={fieldCls('nutrition', 'resize-none font-mono text-xs ')} />
+          <FieldErr k="nutrition" />
           <p className="text-[11px] text-mocha">Plain text — no JSON needed. Saved automatically in the right format.</p>
         </div>
 

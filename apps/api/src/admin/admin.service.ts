@@ -246,16 +246,33 @@ export class AdminService {
     };
   }
 
-  /** Translates raw Prisma errors into human-readable 400s instead of a 500. */
+  /** Field-specific 400: the admin form highlights `field` in red. */
+  private fieldError(field: string | undefined, message: string): never {
+    throw new BadRequestException({ field, message });
+  }
+
+  /** Translates raw DB errors into human-readable, field-specific 400s. */
   private handleWriteError(e: any): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       const fields = ((e.meta?.target as string[]) ?? []).join(', ');
-      if (fields.includes('slug')) throw new BadRequestException('This URL slug is already used by another product — change the slug.');
-      if (fields.includes('sku')) throw new BadRequestException(`This SKU is already used by another product${fields ? ` (${fields})` : ''} — use a unique SKU or leave it blank.`);
-      throw new BadRequestException(`A product with these details already exists${fields ? ` (${fields})` : ''}.`);
+      if (fields.includes('slug')) this.fieldError('slug', 'This URL slug is already used by another product — change the slug.');
+      if (fields.includes('sku')) this.fieldError('sku', 'This SKU is already used by another product — use a unique SKU or leave it blank.');
+      this.fieldError(undefined, `A product with these details already exists${fields ? ` (${fields})` : ''}.`);
     }
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2003') {
-      throw new BadRequestException('The selected category no longer exists — please pick another category.');
+      this.fieldError('categoryId', 'The selected category no longer exists — please pick another category.');
+    }
+    // Safety net: Turso/libsql surfaces unique violations as plain errors
+    // ("UNIQUE constraint failed: Product.sku"), not P2002 — match the text.
+    const raw = String((e as any)?.message ?? '');
+    if (/unique constraint failed/i.test(raw)) {
+      if (/\.sku|["'`]sku["'`]/i.test(raw)) {
+        this.fieldError('sku', 'This SKU is already used by another product — use a unique SKU or leave it blank.');
+      }
+      if (/slug/i.test(raw)) {
+        this.fieldError('slug', 'This URL slug is already used by another product — change the slug.');
+      }
+      this.fieldError(undefined, 'A product with these details already exists — try a different SKU or slug.');
     }
     if (e instanceof BadRequestException) throw e;
     // eslint-disable-next-line no-console
@@ -266,11 +283,25 @@ export class AdminService {
   private async assertCategory(categoryId: string | undefined) {
     if (!categoryId) return;
     const cat = await this.prisma.category.findUnique({ where: { id: categoryId } });
-    if (!cat) throw new BadRequestException('The selected category no longer exists — please pick another category.');
+    if (!cat) this.fieldError('categoryId', 'The selected category no longer exists — please pick another category.');
+  }
+
+  /** Deterministic SKU clash check (works on every DB driver). */
+  private async assertSkuFree(sku: string | undefined, exceptId?: string) {
+    const clean = typeof sku === 'string' ? sku.trim() : '';
+    if (!clean) return;
+    const taken = await this.prisma.product.findUnique({ where: { sku: clean } });
+    if (taken && taken.id !== exceptId) {
+      this.fieldError(
+        'sku',
+        `This SKU is already used by "${taken.name}" — use a unique SKU or leave it blank.`,
+      );
+    }
   }
 
   async createProduct(dto: ProductUpsertDto) {
     await this.assertCategory(dto.categoryId);
+    await this.assertSkuFree(dto.sku);
     let slug = slugify(dto.slug || dto.name);
     // ensure uniqueness
     const existing = await this.prisma.product.findUnique({ where: { slug } });
@@ -293,11 +324,12 @@ export class AdminService {
     const current = await this.prisma.product.findUnique({ where: { id } });
     if (!current) throw new NotFoundException('Product not found');
     await this.assertCategory(dto.categoryId);
+    await this.assertSkuFree(dto.sku, id);
     let slug: string | undefined;
     if (dto.slug && slugify(dto.slug) !== current.slug) {
       slug = slugify(dto.slug);
       const clash = await this.prisma.product.findUnique({ where: { slug } });
-      if (clash) throw new BadRequestException('Slug already in use');
+      if (clash) this.fieldError('slug', 'This URL slug is already used by another product — change the slug.');
     }
     try {
       await this.prisma.product.update({ where: { id }, data: this.productData(dto, slug ?? current.slug) });

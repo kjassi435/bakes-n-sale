@@ -46,14 +46,21 @@ export async function api<T = any>(path: string, opts: { method?: string; body?:
   });
   if (!res.ok) {
     let message = `Request failed (${res.status})`;
+    let field: string | undefined;
     try {
       const err = await res.json();
-      message = err.message ?? message;
-      if (Array.isArray(message)) message = message[0];
+      const m = err.message ?? message;
+      if (Array.isArray(m)) message = m[0];
+      else if (m && typeof m === 'object') {
+        message = m.message ?? message;
+        field = typeof m.field === 'string' ? m.field : undefined;
+      } else message = m;
     } catch {
       /* ignore */
     }
-    throw new Error(message);
+    const error = new Error(message) as Error & { field?: string };
+    if (field) error.field = field;
+    throw error;
   }
   return res.json();
 }
