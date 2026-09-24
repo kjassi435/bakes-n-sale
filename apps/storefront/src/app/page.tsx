@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { API_URL } from '@/lib/api';
-import { getSiteSettings, getProductsBySlugs, productToGalleryItem } from '@/lib/site';
+import { getSiteSettings, getProductsBySlugs, productToGalleryItem, resolveImg } from '@/lib/site';
 import Hero from '@/components/Hero';
 import NewsletterForm from '@/components/NewsletterForm';
 import ProductCard from '@/components/ProductCard';
@@ -74,7 +74,7 @@ export default async function HomePage() {
   const categories = (data?.categories ?? []).map((c: any) => ({
     ...c,
     name: catOverrides[c.slug]?.title || c.name,
-    image: catOverrides[c.slug]?.image || c.image,
+    image: resolveImg(catOverrides[c.slug]?.image || c.image),
   }));
 
   const reviews = (Array.isArray(settings.home_reviews) && settings.home_reviews.length

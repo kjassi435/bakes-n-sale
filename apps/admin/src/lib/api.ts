@@ -1,25 +1,32 @@
 export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 export const STOREFRONT_URL = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? 'http://localhost:3002';
 
-/** Resolve a stored image ref to a viewable URL (local path -> storefront, absolute -> as-is). */
-export function imgSrc(u?: string | null): string {
-  if (!u) return '';
-  const s = u.trim();
-  if (/^https?:\/\//i.test(s) || s.startsWith('data:')) return s;
-  return `${STOREFRONT_URL}${s.startsWith('/') ? s : `/${s}`}`;
-}
-
 /** Convert Google Drive share links to direct-view URLs; pass everything else through. */
 export function normalizeImageUrl(raw: string): string {
   const s = (raw || '').trim();
   if (!s) return s;
-  if (!/drive\.google\.com/i.test(s)) return s;
+  // Already a direct thumbnail link — keep as-is.
+  if (/drive\.google\.com\/thumbnail\?/i.test(s)) return s;
+  // lh3 direct file link — keep as-is.
+  if (/^https:\/\/lh3\.googleusercontent\.com\/d\//i.test(s)) return s;
+  if (!/drive\.google\.com|docs\.google\.com/i.test(s)) return s;
   const m =
-    s.match(/drive\.google\.com\/file\/d\/([A-Za-z0-9_-]+)/) ||
-    s.match(/drive\.google\.com\/open\?id=([A-Za-z0-9_-]+)/) ||
-    s.match(/drive\.google\.com\/uc\?.*?\bid=([A-Za-z0-9_-]+)/);
+    s.match(/drive\.google\.com\/(?:drive\/u\/\d+\/)?file\/d\/([A-Za-z0-9_-]+)/) ||
+    s.match(/drive\.google\.com\/open\?.*?\bid=([A-Za-z0-9_-]+)/) ||
+    s.match(/drive\.google\.com\/uc\?.*?\bid=([A-Za-z0-9_-]+)/) ||
+    s.match(/docs\.google\.com\/uc\?.*?\bid=([A-Za-z0-9_-]+)/) ||
+    s.match(/[?&]id=([A-Za-z0-9_-]{10,})/);
   if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
   return s;
+}
+
+/** Resolve a stored image ref to a viewable URL (local path -> storefront, absolute -> as-is). Drive share links are auto-converted. */
+export function imgSrc(u?: string | null): string {
+  if (!u) return '';
+  const normalized = normalizeImageUrl(u.trim());
+  const s = normalized;
+  if (/^https?:\/\//i.test(s) || s.startsWith('data:')) return s;
+  return `${STOREFRONT_URL}${s.startsWith('/') ? s : `/${s}`}`;
 }
 export const TOKEN_KEY = 'go_admin_token';
 

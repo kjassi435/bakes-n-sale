@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { api, imgSrc, STOREFRONT_URL } from '@/lib/api';
+import { api, imgSrc, normalizeImageUrl, STOREFRONT_URL } from '@/lib/api';
 
 const TABS = [
   { id: 'hero', label: 'Hero Slider' },
@@ -87,7 +87,23 @@ export default function SiteContentPage() {
     setSaving(keys.join(','));
     setMsg('');
     try {
-      const items = keys.map((k) => ({ key: k, value: (settings ?? {})[k] ?? null }));
+      const items = keys.map((k) => {
+        let value = (settings ?? {})[k] ?? null;
+        // Auto-convert pasted Drive share links to direct images on save,
+        // so the storefront + previews work even for raw /file/d/... links.
+        if (k === 'home_categories' && value && typeof value === 'object') {
+          const cleaned: Record<string, any> = {};
+          for (const [slug, ov] of Object.entries<any>(value)) {
+            if (!ov || typeof ov !== 'object') continue;
+            const img = typeof ov.image === 'string' && ov.image.trim() ? normalizeImageUrl(ov.image) : ov.image;
+            // Drop empty overrides so defaults apply cleanly.
+            if (!((ov.title ?? '').trim()) && !((img ?? '').trim?.() ?? img)) continue;
+            cleaned[slug] = { ...ov, image: img };
+          }
+          value = cleaned;
+        }
+        return { key: k, value };
+      });
       const updated = await api('/admin/settings', { method: 'PATCH', body: items });
       setSettings(updated);
       setMsg('✓ Saved — live on the storefront after refresh.');
@@ -124,7 +140,11 @@ export default function SiteContentPage() {
   const saveCategory = async (id: string, body: any) => {
     setSaving(`cat-${id}`);
     try {
-      await api(`/admin/categories/${id}`, { method: 'PATCH', body });
+      const cleaned = { ...body };
+      if (typeof cleaned.image === 'string' && cleaned.image.trim()) {
+        cleaned.image = normalizeImageUrl(cleaned.image);
+      }
+      await api(`/admin/categories/${id}`, { method: 'PATCH', body: cleaned });
       const cats = await api('/categories');
       setCategories(cats);
       setMsg('✓ Category saved — live on the storefront after refresh.');
@@ -141,7 +161,7 @@ export default function SiteContentPage() {
     try {
       await api('/admin/categories', {
         method: 'POST',
-        body: { name: newCat.name.trim(), parentId: newCat.parentId || null, image: newCat.image.trim() || undefined, description: newCat.description.trim() || undefined },
+        body: { name: newCat.name.trim(), parentId: newCat.parentId || null, image: newCat.image.trim() ? normalizeImageUrl(newCat.image) : undefined, description: newCat.description.trim() || undefined },
       });
       setNewCat({ name: '', parentId: '', image: '', description: '' });
       const cats = await api('/categories');

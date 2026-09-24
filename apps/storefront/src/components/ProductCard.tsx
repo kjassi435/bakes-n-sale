@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { formatINR } from '@bakery/shared';
 import { useStore } from '@/lib/store';
+import { resolveImg } from '@/lib/site';
 import RatingStars from './RatingStars';
 
 export default function ProductCard({ product }: { product: any }) {
@@ -33,7 +34,7 @@ export default function ProductCard({ product }: { product: any }) {
       <div className="relative aspect-square overflow-hidden bg-cream">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={product.images?.[0] ?? '/images/products/detail.svg'}
+          src={resolveImg(product.images?.[0], '/images/products/detail.svg')}
           alt={product.name}
           className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
         />

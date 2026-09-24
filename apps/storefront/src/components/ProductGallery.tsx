@@ -1,6 +1,7 @@
 'use client';
 
 import { useRef, useState } from 'react';
+import { normalizeImageUrl } from '@/lib/site';
 
 const FALLBACK = '/images/products/detail.svg';
 
@@ -21,7 +22,7 @@ export default function ProductGallery({
   basePrice: number;
   compareAtPrice?: number | null;
 }) {
-  const list = images?.length ? images : [FALLBACK];
+  const list = (images?.length ? images : [FALLBACK]).map((u) => normalizeImageUrl(u) || FALLBACK);
   const [active, setActive] = useState(0);
   const [zooming, setZooming] = useState(false);
   const [origin, setOrigin] = useState('50% 50%');
