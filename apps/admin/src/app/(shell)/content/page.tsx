@@ -18,23 +18,48 @@ type TabId = (typeof TABS)[number]['id'];
 function ProductSelect({
   value, products, onChange, placeholder,
 }: { value: string; products: any[]; onChange: (slug: string) => void; placeholder: string }) {
+  const [q, setQ] = useState('');
   const prod = products.find((p) => p.slug === value);
+  const needle = q.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const list = needle
+      ? products.filter((p) =>
+          (p.name ?? '').toLowerCase().includes(needle) ||
+          (p.slug ?? '').toLowerCase().includes(needle) ||
+          (p.category?.name ?? '').toLowerCase().includes(needle),
+        )
+      : [...products];
+    // Keep the current selection visible even when it doesn't match the search.
+    if (prod && !list.some((p) => p.slug === prod.slug)) list.unshift(prod);
+    return list.sort((a, b) => (a.name ?? '').localeCompare(b.name ?? ''));
+  }, [products, needle, prod]);
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-start gap-3">
       {prod?.images?.[0] ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={imgSrc(prod.images[0])} alt="" className="h-12 w-12 shrink-0 rounded-lg border border-espresso/10 object-cover" />
       ) : (
         <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-cream text-lg">🧁</span>
       )}
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="input-adm">
-        <option value="">{placeholder}</option>
-        {products.map((p) => (
-          <option key={p.slug} value={p.slug}>
-            {p.name} — /{p.slug}{p.isActive ? '' : ' (hidden)'}
-          </option>
-        ))}
-      </select>
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={`Search ${products.length} products — name or category…`}
+          className="input-adm !py-2 text-xs"
+        />
+        <select value={value} onChange={(e) => onChange(e.target.value)} className="input-adm">
+          <option value="">{placeholder}</option>
+          {filtered.map((p) => (
+            <option key={p.slug} value={p.slug}>
+              {p.name} — /{p.slug}{p.category?.name ? ` · ${p.category.name}` : ''}{p.isActive ? '' : ' (hidden)'}
+            </option>
+          ))}
+        </select>
+        <p className="text-[11px] text-mocha">
+          Showing {filtered.length} of {products.length} products{needle ? ` for “${q.trim()}”` : ''} — tip: type a category like “gift hamper” to list that whole category.
+        </p>
+      </div>
     </div>
   );
 }
