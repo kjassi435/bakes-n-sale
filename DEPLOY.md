@@ -8,7 +8,7 @@ Architecture in production:
 | Database   | Turso  | `bakes-n-sale-kjassi435.aws-ap-south-1.turso.io` (Mumbai) |
 | Storefront | Vercel | `bakes-n-sale-storefront` → https://bakes-n-sale-storefront.vercel.app |
 | Admin      | Vercel | `bakes-n-sale-admin` → https://bakes-n-sale-admin.vercel.app |
-| API        | Vercel | `bakes-n-sale-api` → https://bakes-n-sale-api.vercel.app (NestJS on a serverless function via `apps/api/api/index.ts` + rewrites; same code as local `src/main.ts`) |
+| API        | Render | `bakes-n-sale-api` → https://bakes-n-sale-api.onrender.com (NestJS long-running web service via `render.yaml`; same code as local `src/main.ts`) |
 
 ## 0. Prerequisites (install once)
 
@@ -68,7 +68,7 @@ Project `bakes-n-sale-api`, Root Directory `apps/api`. It builds with
 and serves NestJS from the `api/` serverless function with rewrites `/api/(.*) → /api`.
 Env (production): `DATABASE_URL` (libsql://…), `TURSO_AUTH_TOKEN`, `JWT_SECRET`,
 `JWT_REFRESH_SECRET`, `CORS_ORIGINS=https://bakes-n-sale-storefront.vercel.app,https://bakes-n-sale-admin.vercel.app`.
-Health check: `https://bakes-n-sale-api.vercel.app/api/health` → `{"ok":true,…}`.
+Health check: `https://bakes-n-sale-api.onrender.com/api/health` → `{"ok":true,…}`.
 
 > Note: `render.yaml` is kept as a fallback if you ever want the API on Render instead.
 

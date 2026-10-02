@@ -417,14 +417,14 @@ async function main() {
   console.log('🌱 Seeding Bakes n Sale…');
   // Users
   const [adminHash, managerHash, customerHash] = await Promise.all([
-    bcrypt.hash('12june2011', 10),
+    bcrypt.hash('Admin@123', 10),
     bcrypt.hash('Manager@123', 10),
     bcrypt.hash('Priya@123', 10),
   ]);
   await prisma.user.upsert({
-    where: { email: 'bakesnsale@gmail.com' },
-    update: {},
-    create: { name: 'Mrs. Tanuja', email: 'bakesnsale@gmail.com', passwordHash: adminHash, role: 'ADMIN', phone: '7890027798' },
+    where: { email: 'admin@bakesnsale.com' },
+    update: { passwordHash: adminHash },
+    create: { name: 'Mrs. Tanuja', email: 'admin@bakesnsale.com', passwordHash: adminHash, role: 'ADMIN', phone: '7890027798' },
   });
   await prisma.user.upsert({
     where: { email: 'manager@bakesnsale.com' },
