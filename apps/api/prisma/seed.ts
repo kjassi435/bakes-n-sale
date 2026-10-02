@@ -442,9 +442,17 @@ async function main() {
     create: { name: 'Priya Sharma', email: 'priya@example.com', passwordHash: customerHash, role: 'CUSTOMER', phone: '+91 98100 12345', loyaltyPoints: 240 },
   });
 
-  // Categories — 8 mains + 40 subs (clear old first)
-  await prisma.category.deleteMany({});
+  // Categories — 8 mains + 40 subs.
+  // DANGER: never wipe production data by default. Full reset only with SEED_RESET=true.
+  const allowReset = process.env.SEED_RESET === 'true';
   const catMap: Record<string, string> = {};
+  const categoryCount = await prisma.category.count();
+  if (!allowReset && categoryCount > 0) {
+    const existing = await prisma.category.findMany();
+    for (const c of existing) catMap[c.slug] = c.id;
+    console.log(`⏭️  Keeping ${existing.length} existing categories (set SEED_RESET=true to rebuild).`);
+  } else {
+    if (allowReset) await prisma.category.deleteMany({});
   for (const c of CATEGORIES) {
     const cat = await prisma.category.create({ data: c });
     catMap[c.slug] = cat.id;
@@ -459,13 +467,20 @@ async function main() {
       catMap[s.slug] = sub.id;
     }
   }
+  } // end else (rebuild categories)
 
-  // Clear old products to replace with real bakes catalog
-  await prisma.order.deleteMany({});
-  await prisma.review.deleteMany({});
-  await prisma.wishlist.deleteMany({});
-  await prisma.productVariant.deleteMany({});
-  await prisma.product.deleteMany({});
+  // Products — same guard: never wipe a live catalog by default.
+  const productCount = await prisma.product.count();
+  if (!allowReset && productCount > 0) {
+    console.log(`⏭️  Keeping ${productCount} existing products (set SEED_RESET=true to rebuild).`);
+  } else {
+  if (allowReset) {
+    await prisma.order.deleteMany({});
+    await prisma.review.deleteMany({});
+    await prisma.wishlist.deleteMany({});
+    await prisma.productVariant.deleteMany({});
+    await prisma.product.deleteMany({});
+  }
 
   // Products
   for (let i = 0; i < PRODUCTS.length; i++) {
@@ -504,6 +519,7 @@ async function main() {
       },
     });
   }
+  } // end else (seed products only when empty or forced)
 
   // Reviews - updated to new slugs
   const reviewSeeds = [
